@@ -3,9 +3,10 @@ from tello_control_ui import TelloUI
 
 
 def main():
-
-    # drone = tello.Tello('', 8889)  
-    drone = tello.Tello('', 9000)
+    port = 9000
+    # port = 8889 
+    
+    drone = tello.Tello('', port)
     vplayer = TelloUI(drone,"./img/")
     
 	# start the Tkinter mainloop
