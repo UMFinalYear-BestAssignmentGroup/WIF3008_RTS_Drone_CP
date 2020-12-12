@@ -22,13 +22,17 @@ class TelloUI:
 
         Raises:
             RuntimeError: If the Tello rejects the attempt to enter command mode.
-        """        
+        """
+
 
         self.tello = tello # videostream device
         self.outputPath = outputpath # the path that save pictures created by clicking the takeSnapshot button 
         self.frame = None  # frame read from h264decoder and used for pose recognition 
         self.thread = None # thread of the Tkinter mainloop
-        self.stopEvent = None  
+        self.stopEvent = None
+        self.interrupt = False
+        self.quit = False
+        self.preplannedtoken = True
         
         # control variables
         self.distance = 0.1  # default distance for 'move' cmd
@@ -40,6 +44,7 @@ class TelloUI:
         # initialize the root window and image panel
         self.root = tki.Tk()
         self.panel = None
+
         # ---------->Console Flight Demo<-----------------------
         consoleFrame = Frame(self.root)
         consoleFrame.pack(fill="both", expand="yes", side="bottom")
@@ -110,7 +115,9 @@ class TelloUI:
         # self.btn_preplanned1 = tki.Button(planFrame, text="Start planned route 1",
         #                                command=self.takeSnapshot)
         self.btn_preplanned1 = tki.Button(planFrame, text="Start planned route 1",
-                                          command=self.pauseVideo)
+                                          command=self.testPrePlanned1)
+        # testThread
+        # testPrePlanned1
         self.btn_preplanned1.pack(side="bottom", fill="both",
                                expand="yes", padx=10, pady=5)
 
@@ -249,6 +256,9 @@ class TelloUI:
 
         # the sending_command will send command to tello every 5 seconds
         self.sending_command_thread = threading.Thread(target = self._sendingCommand)
+        self.loop = True
+        while self.loop:
+            self.root.update()
         
     def videoLoop(self):
         """
@@ -479,45 +489,74 @@ class TelloUI:
             self.append_console("True")
 
     def telloTakeOff(self):
+        self.preplannedtoken = False
+        self.append_console("Take off")
         return self.tello.takeoff()                
 
     def telloLanding(self):
+        self.preplannedtoken = False
+        self.append_console("Landing")
         return self.tello.land()
 
     def telloFlip_l(self):
+        self.preplannedtoken = False
+        self.append_console("Flip left")
         return self.tello.flip('l', 0)
 
     def telloFlip_r(self):
+        self.preplannedtoken = False
+        self.append_console("Flip right")
         return self.tello.flip('r', 0)
 
     def telloFlip_f(self):
+        self.preplannedtoken = False
+        self.append_console("Flip forward")
         return self.tello.flip('f', 0)
 
     def telloFlip_b(self):
+        self.interrupt = True
+        self.preplannedtoken = False
+        self.append_console("Flip backward")
         return self.tello.flip('b', 0)
 
     def telloCW(self, degree):
+        self.preplannedtoken = False
+        self.append_console("Rotate clockwise")
         return self.tello.rotate_cw(degree, 0)
 
     def telloCCW(self, degree):
+        self.preplannedtoken = False
+        self.append_console("Rotate Counter-clockwise")
         return self.tello.rotate_ccw(degree, 0)
 
     def telloMoveForward(self, distance):
+        self.preplannedtoken = False
+        self.append_console("Moving Forward")
         return self.tello.move_forward(distance, 0)
 
     def telloMoveBackward(self, distance):
+        self.preplannedtoken = False
+        self.append_console("Moving Backward")
         return self.tello.move_backward(distance, 0)
 
     def telloMoveLeft(self, distance):
+        self.preplannedtoken = False
+        self.append_console("Moving Left")
         return self.tello.move_left(distance, 0)
 
     def telloMoveRight(self, distance):
+        self.preplannedtoken = False
+        self.append_console("Moving Right")
         return self.tello.move_right(distance, 0)
 
     def telloUp(self, dist):
+        self.preplannedtoken = False
+        self.append_console("Moving Upward")
         return self.tello.move_up(dist, 0)
 
     def telloDown(self, dist):
+        self.preplannedtoken = False
+        self.append_console("Moving Downward")
         return self.tello.move_down(dist, 0)
 
     def updateTrackBar(self):
@@ -541,11 +580,13 @@ class TelloUI:
 
     def on_keypress_a(self, event):
         print "ccw %d degree" % self.degree
-        self.tello.rotate_ccw(self.degree)
+        self.telloCCW(self.degree)
+        # self.tello.rotate_ccw(self.degree,1)
 
     def on_keypress_d(self, event):
         print "cw %d m" % self.degree
-        self.tello.rotate_cw(self.degree)
+        self.telloCW(self.degree)
+        # self.tello.rotate_cw(self.degree,1)
 
     def on_keypress_up(self, event):
         print "forward %d m" % self.distance
@@ -568,85 +609,150 @@ class TelloUI:
             self.registerFace()
         self.tmp_f.focus_set()
 
-    def plannedRoute1(self):
+    def plannedoperation(self, movement, value, delay):
+        if movement == "forward":
+            description = "Drone is moving forward for "+ str(value) +" cm. Took around "+ str(delay) +" seconds"
+            self.append_console(description)
+            self.tello.send_command(movement + " " + str(value), delay)
+        elif movement == "cw":
+            description = "Drone is going to turn clockwise "+ str(value) +" degree."
+            self.append_console(description)
+            self.tello.send_command(movement + " " + str(value), delay)
+        else:
+            description = "Drone is going to turn counter-clockwise " + str(value) + " degree."
+            self.append_console(description)
+            self.tello.send_command(movement + " " + str(value), delay)
+
+
+    def testThread(self):
+        checkpoint = [[1, "ccw", 90, 1, "forward", 100, 5], [2, "ccw", 90, 1, "forward", 80, 4], [3, "ccw", 90, 1, "forward", 40, 2], [4, "cw", 90, 1, "forward", 60, 3], [5, "ccw", 90, 1, "forward", 40, 2], [0, "ccw", 90, 1, "forward", 40, 2]]
+        i = 0
         max_round = 1
+        current_round = 1
+        while current_round <= max_round and self.preplannedtoken:
+            print 'Round ', current_round
+            self.append_console('Round '+ str(current_round))
+            if current_round == max_round:
+                self.append_console("Low battery. This is the last round!")
+            while i < len(checkpoint) and self.preplannedtoken:
+                self.plannedoperation(checkpoint[i][1], checkpoint[i][2], checkpoint[i][3])
+                self.plannedoperation(checkpoint[i][4], checkpoint[i][5], checkpoint[i][6])
+                print 'Reached checkpoint ',  str(checkpoint[i][0])
+                self.append_console('Reached checkpoint '+  str(checkpoint[i][0]))
+                self.append_console("==================================================================================")
+                i+=1
+            current_round += 1
+            i = 0
+            if current_round == max_round:
+                self.append_console("Returning to charging port")
+                print("Returning to charging port")
+        if self.preplannedtoken:
+            print("Landing")
+            self.append_console("Landing")
+            self.tello.land()
+            self.append_console("Charging drone")
+            print("Charging drone")
+        else:
+            self.append_console("Toggle to manual flight")
+
+    def testPrePlanned1(self):
+        testthread1 = threading.Thread(target= self.testThread)
+        if self.btn_preplanned1.config('relief')[-1] != 'sunken':
+            self.btn_preplanned1.config(relief="sunken")
+            self.preplannedtoken = True
+            # testthread1.start()
+            self.testThread()
+        else:
+            self.btn_preplanned1.config(relief="raised")
+            self.preplannedtoken = False
+
+    def plannedRoute1(self):
+        self.interrupt = False
+        max_round = 2
         self.tello.takeoff()
-        for x in range(max_round):
-            current_round = x + 1
-            self.mylist.insert(END, 'Round', current_round)
+        # for x in range(max_round):
+        current_round = 1
+        while self.interrupt == False and current_round <= max_round:
+            # self.mylist.insert(END, 'Round', current_round)
             print('Round', current_round)
             if current_round == max_round:
-                self.mylist.insert(END, "Low battery. This is the last round!")
+                self.append_console("Low battery. This is the last round!")
                 print("Low battery. This is the last round!")
 
-            self.mylist.insert(END, ">>At Checkpoint 0")
-            self.mylist.insert(END, "Drone is moving forward for 100 cm. Took around 5 seconds")
+            # self.append_console(">>At Checkpoint 0")
+            self.append_console(">>At Checkpoint 0")
+            self.append_console("Drone is moving forward for 100 cm. Took around 5 seconds")
             print(">>At Checkpoint 0")
             print("Drone is moving forward for 100 cm. Took around 5 seconds")
             self.tello.move_forward(100, 5)
 
-            self.mylist.insert(END, ">>At Checkpoint 1")
-            self.mylist.insert(END, "Drone is going to turn counter-clockwise 90 degree")
+            if self.interrupt:
+                break
+            self.append_console(">>At Checkpoint 1")
+            self.append_console("Drone is going to turn counter-clockwise 90 degree")
             print(">>At Checkpoint 1")
             print("Drone is going to turn counter-clockwise 90 degree")
             self.tello.rotate_ccw(90, 1)
-            self.mylist.insert(END, "Drone is moving forward for 80 cm. Took around 4 seconds")
+            self.append_console("Drone is moving forward for 80 cm. Took around 4 seconds")
             print("Drone is moving forward for 80 cm. Took around 4 seconds")
             self.tello.move_forward(80, 4)
 
-            self.mylist.insert(END, ">>At Checkpoint 2")
-            self.mylist.insert(END, "Drone is going to turn counter-clockwise 90 degree")
+            self.append_console(">>At Checkpoint 2")
+            self.append_console("Drone is going to turn counter-clockwise 90 degree")
             print(">>At Checkpoint 2")
             print("Drone is going to turn counter-clockwise 90 degree")
             self.tello.rotate_ccw(90, 1)
-            self.mylist.insert(END, "Drone is moving forward for 40 cm. Took around 2 seconds")
+            self.append_console("Drone is moving forward for 40 cm. Took around 2 seconds")
             print("Drone is moving forward for 40 cm. Took around 2 seconds")
             self.tello.move_forward(40, 2)
 
-            self.mylist.insert(END, ">>At Checkpoint 3")
-            self.mylist.insert(END, "Drone is going to turn counter-clockwise 90 degree")
+            self.append_console(">>At Checkpoint 3")
+            self.append_console("Drone is going to turn counter-clockwise 90 degree")
             print(">>At Checkpoint 3")
             print("Drone is going to turn counter-clockwise 90 degree")
             self.tello.rotate_ccw(90, 1)
-            self.mylist.insert(END, "Drone is moving forward for 40 cm. Took around 2 seconds")
+            self.append_console("Drone is moving forward for 40 cm. Took around 2 seconds")
             print("Drone is moving forward for 40 cm. Took around 2 seconds")
             self.tello.move_forward(40, 2)
 
-            self.mylist.insert(END, ">>At Checkpoint 4")
-            self.mylist.insert(END, "Drone is going to turn clockwise 90 degree")
+            self.append_console(">>At Checkpoint 4")
+            self.append_console("Drone is going to turn clockwise 90 degree")
             print(">>At Checkpoint 4")
             print("Drone is going to turn clockwise 90 degree")
             self.tello.rotate_cw(90, 1)
-            self.mylist.insert(END, "Drone is moving forward for 60 cm. Took around 3 seconds")
+            self.append_console("Drone is moving forward for 60 cm. Took around 3 seconds")
             print("Drone is moving forward for 60 cm. Took around 3 seconds")
             self.tello.move_forward(60, 3)
 
-            self.mylist.insert(END, ">>At Checkpoint 5")
-            self.mylist.insert(END, "Drone is going to turn counter-clockwise 90 degree")
+            self.append_console(">>At Checkpoint 5")
+            self.append_console("Drone is going to turn counter-clockwise 90 degree")
             print(">>At Checkpoint 5")
             print("Drone is going to turn counter-clockwise 90 degree")
             self.tello.rotate_ccw(90, 1)
-            self.mylist.insert(END, "Drone is moving forward for 40 cm. Took around 2 seconds")
+            self.append_console("Drone is moving forward for 40 cm. Took around 2 seconds")
             print("Drone is moving forward for 40 cm. Took around 2 seconds")
             self.tello.move_forward(40, 2)
 
             # print(">>At Checkpoint 0")
-            self.mylist.insert(END, "==========================================================")
+            self.append_console("==========================================================")
             print("==========================================================")
             if current_round == max_round:
-                self.mylist.insert(END, "Returning to charging port")
+                self.append_console("Returning to charging port")
                 print("Returning to charging port")
 
+            current_round += 1
+
         print("Landing")
-        self.mylist.insert(END, "Landing")
+        self.append_console("Landing")
         self.tello.land()
-        self.mylist.insert(END, "Charging drone")
+        self.append_console("Charging drone")
         print("Charging drone")
 
     def plannedRoute2(self):
-        max_round = 1
+        max_round = 2
         self.tello.takeoff()
         for x in range(max_round):
+            self.root.update()
             current_round = x + 1
             self.mylist.insert(END, 'Round', current_round )
             print('Round', current_round)
@@ -723,16 +829,20 @@ class TelloUI:
 
     def append_console(self, command):
         self.mylist.insert(END, command)
-        self.mylist.pack(side=LEFT, fill=BOTH)
+        # self.mylist.pack(side=LEFT, fill=BOTH)
         self.mylist.see("end")
+        self.root.update()
     def onClose(self):
         """
         set the stop event, cleanup the camera, and allow the rest of
         
         the quit process to continue
         """
+        self.loop = False
         print("[INFO] closing...")
         self.stopEvent.set()
         del self.tello
         self.root.quit()
+        self.root.destroy()
+        print("Quited")
 
