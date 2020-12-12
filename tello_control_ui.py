@@ -653,7 +653,7 @@ class TelloUI:
             self.append_console("Charging drone")
             print("Charging drone")
         else:
-            self.append_console("Toggle to manual flight")
+            self.append_console("Toggled to manual flight")
 
     def testPrePlanned1(self):
         testthread1 = threading.Thread(target= self.testThread)
