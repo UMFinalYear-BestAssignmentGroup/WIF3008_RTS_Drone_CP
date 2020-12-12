@@ -8,8 +8,6 @@ import cv2
 import os
 import time
 import platform
-import tkMessageBox
-import ScrolledText
 
 class TelloUI:
     """Wrapper class to enable the GUI."""
@@ -112,25 +110,16 @@ class TelloUI:
         planFrame = LabelFrame(controlFrame1, text="Pre-Planned")
         planFrame.pack(fill="both", expand="yes", side="right")
 
-        # self.btn_preplanned1 = tki.Button(planFrame, text="Start planned route 1",
-        #                                command=self.takeSnapshot)
-        self.btn_preplanned1 = tki.Button(planFrame, text="Start planned route 1",
+        self.btn_preplanned1 = tki.Button(planFrame, text="Start Automatic Flight",
                                           command=self.testPrePlanned1)
-        # testThread
-        # testPrePlanned1
-        self.btn_preplanned1.pack(side="bottom", fill="both",
+        self.btn_preplanned1.pack(side="top", fill="both",
                                expand="yes", padx=10, pady=5)
 
-        # self.btn_preplanned2 = tki.Button(planFrame, text="Start planned route 2", relief="raised", command=self.pauseVideo)
-        self.btn_preplanned2 = tki.Button(planFrame, text="Start planned route 2", relief="raised",
-                                          command=self.plannedRoute2)
-        self.btn_preplanned2.pack(side="bottom", fill="both",
-                            expand="yes", padx=10, pady=5)
+        # self.btn_preplanned2 = tki.Button(planFrame, text="Start planned route 2", relief="raised",
+        #                                   command=self.plannedRoute2)
+        # self.btn_preplanned2.pack(side="bottom", fill="both",
+        #                     expand="yes", padx=10, pady=5)
 
-        # self.btn_landing = tki.Button(
-        #     self.root, text="Open Command Panel", relief="raised", command=self.openCmdWindow)
-        # self.btn_landing.pack(side="bottom", fill="both",
-        #                       expand="yes", padx=10, pady=5)
 
         #--------------------->Command Panel<-----------------------------
         # text0 = tki.Label(self.root,
@@ -627,7 +616,7 @@ class TelloUI:
     def testThread(self):
         checkpoint = [[1, "ccw", 90, 1, "forward", 100, 5], [2, "ccw", 90, 1, "forward", 80, 4], [3, "ccw", 90, 1, "forward", 40, 2], [4, "cw", 90, 1, "forward", 60, 3], [5, "ccw", 90, 1, "forward", 40, 2], [0, "ccw", 90, 1, "forward", 40, 2]]
         i = 0
-        max_round = 1
+        max_round = 4
         current_round = 1
         while current_round <= max_round and self.preplannedtoken:
             print 'Round ', current_round
