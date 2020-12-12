@@ -110,7 +110,7 @@ class TelloUI:
         # self.btn_preplanned1 = tki.Button(planFrame, text="Start planned route 1",
         #                                command=self.takeSnapshot)
         self.btn_preplanned1 = tki.Button(planFrame, text="Start planned route 1",
-                                          command=self.plannedRoute1)
+                                          command=self.pauseVideo)
         self.btn_preplanned1.pack(side="bottom", fill="both",
                                expand="yes", padx=10, pady=5)
 
@@ -472,9 +472,11 @@ class TelloUI:
         if self.btn_pause.config('relief')[-1] == 'sunken':
             self.btn_pause.config(relief="raised")
             self.tello.video_freeze(False)
+            self.append_console("False")
         else:
             self.btn_pause.config(relief="sunken")
             self.tello.video_freeze(True)
+            self.append_console("True")
 
     def telloTakeOff(self):
         return self.tello.takeoff()                
@@ -721,6 +723,7 @@ class TelloUI:
 
     def append_console(self, command):
         self.mylist.insert(END, command)
+        self.mylist.pack(side=LEFT, fill=BOTH)
         self.mylist.see("end")
     def onClose(self):
         """
