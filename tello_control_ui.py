@@ -618,6 +618,8 @@ class TelloUI:
         i = 0
         max_round = 5
         current_round = 1
+        self.append_console("Takeoff")
+        self.tello.takeoff()
         while current_round <= max_round and self.preplannedtoken:
             print 'Round ', current_round
             self.append_console('Round '+ str(current_round))
