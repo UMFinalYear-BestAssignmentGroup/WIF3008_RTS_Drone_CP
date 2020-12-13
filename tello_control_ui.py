@@ -20,13 +20,14 @@ class TelloUI:
 
         Raises:
             RuntimeError: If the Tello rejects the attempt to enter command mode.
-        """        
-
+        """
         self.tello = tello # videostream device
         self.outputPath = outputpath # the path that save pictures created by clicking the takeSnapshot button 
         self.frame = None  # frame read from h264decoder and used for pose recognition 
         self.thread = None # thread of the Tkinter mainloop
-        self.stopEvent = None  
+        self.stopEvent = None
+        self.quit = False
+        self.autoFlightToken = False
         
         # control variables
         self.distance = 0.1  # default distance for 'move' cmd
@@ -38,6 +39,27 @@ class TelloUI:
         # initialize the root window and image panel
         self.root = tki.Tk()
         self.panel = None
+
+        # ---------->Console Flight Demo<-----------------------
+        consoleFrame = Frame(self.root)
+        consoleFrame.pack(fill="both", expand="yes", side="bottom")
+
+        consoleContent = LabelFrame(consoleFrame, text="Console", )
+        consoleContent.pack(fill="both", expand="yes", side="left")
+
+
+        scrollbar = Scrollbar(consoleContent)
+        scrollbar.pack(side=RIGHT, fill=Y)
+
+        self.mylist = Listbox(consoleContent, yscrollcommand=scrollbar.set, width=100, selectmode=BROWSE )
+        self.mylist.selection_set(first=0, last=None)
+        self.mylist.selection_clear(2)
+        self.mylist.see("end")
+
+        self.mylist.pack(side=LEFT, fill=BOTH)
+        scrollbar.config(command=self.mylist.yview)
+
+        # ---------->Console Flight Demo Ends<-----------------------
 
         # create buttons
         controlFrame1 = Frame(self.root)
@@ -56,31 +78,15 @@ class TelloUI:
                             expand="yes", padx=10, pady=5)
 
         #---------->Pre-planned flight<-----------------------
-        planFrame = LabelFrame(controlFrame1, text="Video")
+        planFrame = LabelFrame(controlFrame1, text="Pre-Planned")
         planFrame.pack(fill="both", expand="yes", side="right")
 
-        self.btn_preplanned1 = tki.Button(planFrame, text="Start planned route 1",
-                                       command=self.takeSnapshot)
-        self.btn_preplanned1.pack(side="bottom", fill="both",
+        self.btn_autoFlight = tki.Button(planFrame, text="Start Automatic Flight",
+                                          command=self.autoControlFlight)
+        self.btn_autoFlight.pack(side="top", fill="both",
                                expand="yes", padx=10, pady=5)
 
-        self.btn_preplanned2 = tki.Button(planFrame, text="Start planned route 2", relief="raised", command=self.pauseVideo)
-        self.btn_preplanned2.pack(side="bottom", fill="both",
-                            expand="yes", padx=10, pady=5)
-
-        # self.btn_landing = tki.Button(
-        #     self.root, text="Open Command Panel", relief="raised", command=self.openCmdWindow)
-        # self.btn_landing.pack(side="bottom", fill="both",
-        #                       expand="yes", padx=10, pady=5)
-
-        #--------------------->Command Panel<-----------------------------
-        # text0 = tki.Label(self.root,
-        #                   text='This Controller map keyboard inputs to Tello control commands\n'
-        #                        'Adjust the trackbar to reset distance and degree parameter',
-        #                   font='Helvetica 10 bold'
-        #                   )
-        # text0.pack(side='top')
-
+        # ---------->Instruction Frame Starts<-----------------------
         controlFrame2 = Frame(self.root)
         controlFrame2.pack(fill="both", expand="yes", side="bottom")
         
@@ -100,7 +106,6 @@ class TelloUI:
         text1.pack(side="right")
 
         #-------------------------->Flip Frame<-----------------------------------------
-        
 
         flipFrame = LabelFrame(controlFrame2, text="Flip")
         flipFrame.pack(fill="both", expand="yes", side="left")
@@ -124,8 +129,6 @@ class TelloUI:
             flipFrame, text="Flip Backward", relief="raised", command=self.telloFlip_b)
         self.btn_flipb.pack(side="bottom", fill="both",
                             expand="yes", padx=10, pady=5)
-
-        #------------------------> End of Flip Frame <------------------------
 
         #------------------------> Land/Takeoff <-----------------------------
 
@@ -156,11 +159,6 @@ class TelloUI:
         self.tmp_f.bind('<KeyPress-Right>', self.on_keypress_right)
         self.tmp_f.pack(side="bottom")
         self.tmp_f.focus_set()
-
-        # self.btn_landing = tki.Button(
-        #     panel, text="Flip", relief="raised", command=self.openFlipWindow)
-        # self.btn_landing.pack(side="bottom", fill="both",
-        #                       expand="yes", padx=10, pady=5)
 
         self.distance_bar = Scale(self.root, from_=0.02, to=5, tickinterval=0.01, digits=3, label='Distance(m)',
                                   resolution=0.01)
@@ -195,6 +193,9 @@ class TelloUI:
 
         # the sending_command will send command to tello every 5 seconds
         self.sending_command_thread = threading.Thread(target = self._sendingCommand)
+        self.loop = True
+        while self.loop:
+            self.root.update()
         
     def videoLoop(self):
         """
@@ -252,140 +253,23 @@ class TelloUI:
         start a while loop that sends 'command' to tello every 5 second
         """    
 
-        while True:
-            self.tello.send_command('command')        
-            time.sleep(5)
+        # while True:
+        #     self.tello.send_command('command',0)
+        #     time.sleep(5)
+
+    def _sendCommand(self, command):
+        """
+        start a while loop that sends 'command' to tello every 5 second
+        """
+
+
+        self.tello.send_command(command)
 
     def _setQuitWaitingFlag(self):  
         """
         set the variable as TRUE,it will stop computer waiting for response from tello  
         """       
         self.quit_waiting_flag = True        
-   
-    # def openCmdWindow(self):
-    #     """
-    #     open the cmd window and initial all the button and text
-    #     """        
-    #     panel = Toplevel(self.root)
-    #     panel.wm_title("Command Panel")
-
-    #     # create text input entry
-    #     text0 = tki.Label(panel,
-    #                       text='This Controller map keyboard inputs to Tello control commands\n'
-    #                            'Adjust the trackbar to reset distance and degree parameter',
-    #                       font='Helvetica 10 bold'
-    #                       )
-    #     text0.pack(side='top')
-
-    #     text1 = tki.Label(panel, text=
-    #                       'W - Move Tello Up\t\t\tArrow Up - Move Tello Forward\n'
-    #                       'S - Move Tello Down\t\t\tArrow Down - Move Tello Backward\n'
-    #                       'A - Rotate Tello Counter-Clockwise\tArrow Left - Move Tello Left\n'
-    #                       'D - Rotate Tello Clockwise\t\tArrow Right - Move Tello Right',
-    #                       justify="left")
-    #     text1.pack(side="top")
-
-    #     #-------------------------->Start of Test<-----------------------------------------
-
-    #     labelframe = LabelFrame(panel, text="Flip")
-    #     labelframe.pack(fill="both", expand="yes", side="bottom")
-
-    #     self.btn_flipl = tki.Button(
-    #         labelframe, text="Flip Left", relief="raised", command=self.telloFlip_l)
-    #     self.btn_flipl.pack(side="bottom", fill="both",
-    #                         expand="yes", padx=10, pady=5)
-
-    #     self.btn_flipr = tki.Button(
-    #         labelframe, text="Flip Right", relief="raised", command=self.telloFlip_r)
-    #     self.btn_flipr.pack(side="bottom", fill="both",
-    #                         expand="yes", padx=10, pady=5)
-
-    #     self.btn_flipf = tki.Button(
-    #         labelframe, text="Flip Forward", relief="raised", command=self.telloFlip_f)
-    #     self.btn_flipf.pack(side="bottom", fill="both",
-    #                         expand="yes", padx=10, pady=5)
-
-    #     self.btn_flipb = tki.Button(
-    #         labelframe, text="Flip Backward", relief="raised", command=self.telloFlip_b)
-    #     self.btn_flipb.pack(side="bottom", fill="both",
-    #                         expand="yes", padx=10, pady=5)
-
-    #     #------------------------------->End of Test<-----------------------------------------
-
-    #     self.btn_landing = tki.Button(
-    #         panel, text="Land", relief="raised", command=self.telloLanding)
-    #     self.btn_landing.pack(side="bottom", fill="both",
-    #                           expand="yes", padx=10, pady=5)
-
-    #     self.btn_takeoff = tki.Button(
-    #         panel, text="Takeoff", relief="raised", command=self.telloTakeOff)
-    #     self.btn_takeoff.pack(side="bottom", fill="both",
-    #                           expand="yes", padx=10, pady=5)
-
-    #     # binding arrow keys to drone control
-    #     self.tmp_f = tki.Frame(panel, width=100, height=2)
-    #     self.tmp_f.bind('<KeyPress-w>', self.on_keypress_w)
-    #     self.tmp_f.bind('<KeyPress-s>', self.on_keypress_s)
-    #     self.tmp_f.bind('<KeyPress-a>', self.on_keypress_a)
-    #     self.tmp_f.bind('<KeyPress-d>', self.on_keypress_d)
-    #     self.tmp_f.bind('<KeyPress-Up>', self.on_keypress_up)
-    #     self.tmp_f.bind('<KeyPress-Down>', self.on_keypress_down)
-    #     self.tmp_f.bind('<KeyPress-Left>', self.on_keypress_left)
-    #     self.tmp_f.bind('<KeyPress-Right>', self.on_keypress_right)
-    #     self.tmp_f.pack(side="bottom")
-    #     self.tmp_f.focus_set()
-
-    #     # self.btn_landing = tki.Button(
-    #     #     panel, text="Flip", relief="raised", command=self.openFlipWindow)
-    #     # self.btn_landing.pack(side="bottom", fill="both",
-    #     #                       expand="yes", padx=10, pady=5)
-
-    #     self.distance_bar = Scale(panel, from_=0.02, to=5, tickinterval=0.01, digits=3, label='Distance(m)',
-    #                               resolution=0.01)
-    #     self.distance_bar.set(0.2)
-    #     self.distance_bar.pack(side="left")
-
-    #     self.btn_distance = tki.Button(panel, text="Reset Distance", relief="raised",
-    #                                    command=self.updateDistancebar,
-    #                                    )
-    #     self.btn_distance.pack(side="left", fill="both",
-    #                            expand="yes", padx=10, pady=5)
-
-    #     self.degree_bar = Scale(panel, from_=1, to=360, tickinterval=10, label='Degree')
-    #     self.degree_bar.set(30)
-    #     self.degree_bar.pack(side="right")
-
-    #     self.btn_distance = tki.Button(panel, text="Reset Degree", relief="raised", command=self.updateDegreebar)
-    #     self.btn_distance.pack(side="right", fill="both",
-    #                            expand="yes", padx=10, pady=5)
-
-    # def openFlipWindow(self):
-    #     """
-    #     open the flip window and initial all the button and text
-    #     """
-        
-    #     panel = Toplevel(self.root)
-    #     panel.wm_title("Gesture Recognition")
-
-    #     self.btn_flipl = tki.Button(
-    #         panel, text="Flip Left", relief="raised", command=self.telloFlip_l)
-    #     self.btn_flipl.pack(side="bottom", fill="both",
-    #                         expand="yes", padx=10, pady=5)
-
-    #     self.btn_flipr = tki.Button(
-    #         panel, text="Flip Right", relief="raised", command=self.telloFlip_r)
-    #     self.btn_flipr.pack(side="bottom", fill="both",
-    #                         expand="yes", padx=10, pady=5)
-
-    #     self.btn_flipf = tki.Button(
-    #         panel, text="Flip Forward", relief="raised", command=self.telloFlip_f)
-    #     self.btn_flipf.pack(side="bottom", fill="both",
-    #                         expand="yes", padx=10, pady=5)
-
-    #     self.btn_flipb = tki.Button(
-    #         panel, text="Flip Backward", relief="raised", command=self.telloFlip_b)
-    #     self.btn_flipb.pack(side="bottom", fill="both",
-    #                         expand="yes", padx=10, pady=5)
        
     def takeSnapshot(self):
         """
@@ -410,51 +294,99 @@ class TelloUI:
         if self.btn_pause.config('relief')[-1] == 'sunken':
             self.btn_pause.config(relief="raised")
             self.tello.video_freeze(False)
+            self.append_console("False")
         else:
             self.btn_pause.config(relief="sunken")
             self.tello.video_freeze(True)
+            self.append_console("True")
+
+    # ============> Drone functions <============
 
     def telloTakeOff(self):
-        return self.tello.takeoff()                
+        if not self.autoFlightToken:
+            self.append_console("Take off")
+            return self.tello.takeoff()   
+        self.autoFlightToken = False 
 
     def telloLanding(self):
-        return self.tello.land()
+        if not self.autoFlightToken:
+            self.append_console("Landing")
+            return self.tello.land()
+        self.autoFlightToken = False
 
     def telloFlip_l(self):
-        return self.tello.flip('l')
+        if not self.autoFlightToken:
+            self.append_console("Flip left")
+            return self.tello.flip('l', 0)
+        self.autoFlightToken = False
 
     def telloFlip_r(self):
-        return self.tello.flip('r')
+        if not self.autoFlightToken:
+            self.append_console("Flip right")
+            return self.tello.flip('r', 0)
+        self.autoFlightToken = False
 
     def telloFlip_f(self):
-        return self.tello.flip('f')
+        if not self.autoFlightToken:
+            self.append_console("Flip forward")
+            return self.tello.flip('f', 0)
+        self.autoFlightToken = False
 
     def telloFlip_b(self):
-        return self.tello.flip('b')
+        if not self.autoFlightToken:
+            self.append_console("Flip backward")
+            return self.tello.flip('b', 0)
+        self.autoFlightToken = False
 
     def telloCW(self, degree):
-        return self.tello.rotate_cw(degree)
+        if not self.autoFlightToken:
+            self.append_console("Rotate clockwise")
+            return self.tello.rotate_cw(degree, 0)
+        self.autoFlightToken = False
 
     def telloCCW(self, degree):
-        return self.tello.rotate_ccw(degree)
+        if not self.autoFlightToken:
+            self.append_console("Rotate Counter-clockwise")
+            return self.tello.rotate_ccw(degree, 0)
+        self.autoFlightToken = False
 
     def telloMoveForward(self, distance):
-        return self.tello.move_forward(distance)
+        if not self.autoFlightToken:
+            self.append_console("Moving Forward")
+            return self.tello.move_forward(distance, 0)
+        self.autoFlightToken = False
 
     def telloMoveBackward(self, distance):
-        return self.tello.move_backward(distance)
+        if not self.autoFlightToken:
+            self.append_console("Moving Backward")
+            return self.tello.move_backward(distance, 0)
+        self.autoFlightToken = False
 
     def telloMoveLeft(self, distance):
-        return self.tello.move_left(distance)
+        if not self.autoFlightToken:
+            self.append_console("Moving Left")
+            return self.tello.move_left(distance, 0)
+        self.autoFlightToken = False
 
     def telloMoveRight(self, distance):
-        return self.tello.move_right(distance)
+        if not self.autoFlightToken:
+            self.append_console("Moving Right")
+            return self.tello.move_right(distance, 0)
+        self.autoFlightToken = False
 
     def telloUp(self, dist):
-        return self.tello.move_up(dist)
+        if not self.autoFlightToken:
+            self.append_console("Moving Upward")
+            return self.tello.move_up(dist, 0)
+        self.autoFlightToken = False
 
     def telloDown(self, dist):
-        return self.tello.move_down(dist)
+        if not self.autoFlightToken:
+            self.append_console("Moving Downward")
+            return self.tello.move_down(dist, 0)
+        self.autoFlightToken = False
+
+    # ============> On key press functions <============
 
     def updateTrackBar(self):
         self.my_tello_hand.setThr(self.hand_thr_bar.get())
@@ -477,11 +409,11 @@ class TelloUI:
 
     def on_keypress_a(self, event):
         print "ccw %d degree" % self.degree
-        self.tello.rotate_ccw(self.degree)
+        self.telloCCW(self.degree)
 
     def on_keypress_d(self, event):
         print "cw %d m" % self.degree
-        self.tello.rotate_cw(self.degree)
+        self.telloCW(self.degree)
 
     def on_keypress_up(self, event):
         print "forward %d m" % self.distance
@@ -503,15 +435,96 @@ class TelloUI:
         if self.frame is not None:
             self.registerFace()
         self.tmp_f.focus_set()
+    
+    # ====================================
 
+    # Send command to drone
+    def runPlannedFlight(self, movement, value, delay):
+        if movement == "forward":
+            description = "Drone is moving forward for "+ str(value) +" cm. Took around "+ str(delay) +" seconds"
+            self.append_console(description)
+            self.tello.move_forward(value, delay)
+            # self.tello.send_command(movement + " " + str(value), delay)
+        elif movement == "cw":
+            description = "Drone is going to turn clockwise "+ str(value) +" degree."
+            self.append_console(description)
+            self.tello.rotate_cw(value, delay)
+            # self.tello.send_command(movement + " " + str(value), delay)
+        elif movement == "ccw":
+            description = "Drone is going to turn counter-clockwise " + str(value) + " degree."
+            self.append_console(description)
+            self.tello.rotate_ccw(value, delay)
+            # self.tello.send_command(movement + " " + str(value), delay)
+
+    # Thread for Automatic Flight
+    def flightThread(self):
+        # Pre-planned flight for drone
+        checkpoint = [[1, "ccw", 90, 1, "forward", 100, 5], [2, "ccw", 90, 1, "forward", 80, 4], [3, "ccw", 90, 1, "forward", 40, 2], [4, "cw", 90, 1, "forward", 60, 3], [5, "ccw", 90, 1, "forward", 40, 2], [0, "ccw", 90, 1, "forward", 40, 2]]
+        i = 0
+        max_round = 5
+        current_round = 1
+        self.append_console("Starting automatic flight")
+        self.append_console("Takeoff")
+
+        self.tello.takeoff()
+
+        # Let drone run the pre-planned route 5 times
+        while current_round <= max_round and self.autoFlightToken:
+            print 'Round ', current_round
+            self.append_console('Round '+ str(current_round))
+            if current_round == max_round:
+                self.append_console("This is the last round!")
+            while i < len(checkpoint) and self.autoFlightToken:
+                self.runPlannedFlight(checkpoint[i][1], checkpoint[i][2], checkpoint[i][3])
+                self.runPlannedFlight(checkpoint[i][4], checkpoint[i][5], checkpoint[i][6])
+                print 'Reached checkpoint ',  str(checkpoint[i][0])
+                self.append_console('Reached checkpoint '+  str(checkpoint[i][0]))
+                self.append_console("==================================================================================")
+                i+=1
+            current_round += 1
+            i = 0
+            if current_round == max_round:
+                self.append_console("Returning to charging port")
+                print("Returning to charging port")
+        if self.autoFlightToken:
+            print("Landing")
+            self.append_console("Landing")
+            self.tello.land()
+            self.append_console("Charging drone")
+            print("Charging drone")
+        else:
+            self.append_console("Flight is interrupted. Switching to Manual mode")
+        self.btn_autoFlight.config(relief="raised")
+
+    # Start/Stop thread when button is pressed
+    def autoControlFlight(self):
+        # flightThread1 = threading.Thread(target= self.flightThread)
+        if self.btn_autoFlight.config('relief')[-1] != 'sunken':
+            self.btn_autoFlight.config(relief="sunken")
+            self.autoFlightToken = True
+            self.flightThread()
+        else:
+            self.btn_autoFlight.config(relief="raised")
+            self.autoFlightToken = False
+
+    # Print to Tkinter console
+    def append_console(self, command):
+        self.mylist.insert(END, command)
+        self.mylist.see("end")
+        self.root.update()
+
+    # Close system
     def onClose(self):
         """
         set the stop event, cleanup the camera, and allow the rest of
         
         the quit process to continue
         """
+        self.loop = False
         print("[INFO] closing...")
         self.stopEvent.set()
         del self.tello
         self.root.quit()
+        self.root.destroy()
+        print("Quited")
 
