@@ -616,7 +616,7 @@ class TelloUI:
     def testThread(self):
         checkpoint = [[1, "ccw", 90, 1, "forward", 100, 5], [2, "ccw", 90, 1, "forward", 80, 4], [3, "ccw", 90, 1, "forward", 40, 2], [4, "cw", 90, 1, "forward", 60, 3], [5, "ccw", 90, 1, "forward", 40, 2], [0, "ccw", 90, 1, "forward", 40, 2]]
         i = 0
-        max_round = 4
+        max_round = 5
         current_round = 1
         while current_round <= max_round and self.preplannedtoken:
             print 'Round ', current_round
@@ -642,7 +642,9 @@ class TelloUI:
             self.append_console("Charging drone")
             print("Charging drone")
         else:
-            self.append_console("Toggled to manual flight")
+            self.append_console("Flight interrupted. Switching to Manual mode")
+        self.btn_preplanned1.config(relief="raised")
+
 
     def testPrePlanned1(self):
         testthread1 = threading.Thread(target= self.testThread)
