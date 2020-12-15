@@ -31,6 +31,10 @@ class TelloUI:
         self.interrupt = False
         self.quit = False
         self.preplannedtoken = True
+        self.current_round = 1
+        self.current_checkpoint = 0
+        self.isPause = False
+        self.isStop = False
         
         # control variables
         self.distance = 0.1  # default distance for 'move' cmd
@@ -108,18 +112,50 @@ class TelloUI:
 
         #---------->Pre-planned flight<-----------------------
         planFrame = LabelFrame(controlFrame1, text="Pre-Planned")
-        planFrame.pack(fill="both", expand="yes", side="right")
+        planFrame.pack(fill="both", expand="yes", side="left")
 
         self.btn_preplanned1 = tki.Button(planFrame, text="Start Automatic Flight",
                                           command=self.testPrePlanned1)
         self.btn_preplanned1.pack(side="top", fill="both",
                                expand="yes", padx=10, pady=5)
 
+        self.btn_preplanned_stop = tki.Button(planFrame, text="Stop",
+                                          command=self.pre_planned_stop)
+        self.btn_preplanned_stop.pack(side="top", fill="both",
+                                  expand="yes", padx=10, pady=5)
+        self.btn_preplanned_stop["state"] = DISABLED
+
+
+
         # self.btn_preplanned2 = tki.Button(planFrame, text="Start planned route 2", relief="raised",
         #                                   command=self.plannedRoute2)
         # self.btn_preplanned2.pack(side="bottom", fill="both",
         #                     expand="yes", padx=10, pady=5)
 
+        # ---------->Pre-planned flight control<-----------------------
+
+        # planFrameControl = LabelFrame(controlFrame1, text="Pre-Planned Control Panel")
+        # planFrameControl.pack(fill="both", expand="yes", side="left")
+        #
+        # self.btn_preplanned_pause = tki.Button(planFrameControl, text="Pause",
+        #                                   command=self.pre_planned_paused)
+        # self.btn_preplanned_pause.pack(side="top", fill="both",
+        #                        expand="yes", padx=10, pady=5)
+        # self.btn_preplanned_pause["state"] = DISABLED
+        #
+        #
+        # self.btn_preplanned_continue = tki.Button(planFrameControl, text="Continue",
+        #                                        command=self.pre_planned_continue)
+        # self.btn_preplanned_continue.pack(side="top", fill="both",
+        #                                expand="yes", padx=10, pady=5)
+        # self.btn_preplanned_continue["state"] = DISABLED
+
+
+        # self.btn_preplanned_stop = tki.Button(planFrameControl, text="Stop",
+        #                                   command=self.pre_planned_stop)
+        # self.btn_preplanned_stop.pack(side="top", fill="both",
+        #                           expand="yes", padx=10, pady=5)
+        # self.btn_preplanned_stop["state"] = DISABLED
 
         #--------------------->Command Panel<-----------------------------
         # text0 = tki.Label(self.root,
@@ -231,6 +267,9 @@ class TelloUI:
         self.btn_distance.pack(side="right", fill="both",
                                expand="yes", padx=10, pady=5)
 
+        self.btn_reset_battery = tki.Button(self.root, text="Reset to Full Battery", relief="raised", command=self.resetBattery)
+        self.btn_reset_battery.pack(side="right", fill="both",
+                               expand="yes", padx=10, pady=5)
         #---------------------->End of Command Panel<-----------------------------
         
         # start a thread that constantly pools the video sensor for
@@ -480,72 +519,86 @@ class TelloUI:
     def telloTakeOff(self):
         self.preplannedtoken = False
         self.append_console("Take off")
+        self.pre_planned_stop()
         return self.tello.takeoff()                
 
     def telloLanding(self):
         self.preplannedtoken = False
         self.append_console("Landing")
+        self.pre_planned_stop()
         return self.tello.land()
 
     def telloFlip_l(self):
         self.preplannedtoken = False
         self.append_console("Flip left")
+        self.pre_planned_stop()
         return self.tello.flip('l', 0)
 
     def telloFlip_r(self):
         self.preplannedtoken = False
         self.append_console("Flip right")
+        self.pre_planned_stop()
         return self.tello.flip('r', 0)
 
     def telloFlip_f(self):
         self.preplannedtoken = False
         self.append_console("Flip forward")
+        self.pre_planned_stop()
         return self.tello.flip('f', 0)
 
     def telloFlip_b(self):
         self.interrupt = True
         self.preplannedtoken = False
         self.append_console("Flip backward")
+        self.pre_planned_stop()
         return self.tello.flip('b', 0)
 
     def telloCW(self, degree):
         self.preplannedtoken = False
         self.append_console("Rotate clockwise")
+        self.pre_planned_stop()
         return self.tello.rotate_cw(degree, 0)
 
     def telloCCW(self, degree):
         self.preplannedtoken = False
         self.append_console("Rotate Counter-clockwise")
+        self.pre_planned_stop()
         return self.tello.rotate_ccw(degree, 0)
 
     def telloMoveForward(self, distance):
         self.preplannedtoken = False
         self.append_console("Moving Forward")
+        self.pre_planned_stop()
         return self.tello.move_forward(distance, 0)
 
     def telloMoveBackward(self, distance):
         self.preplannedtoken = False
         self.append_console("Moving Backward")
+        self.pre_planned_stop()
         return self.tello.move_backward(distance, 0)
 
     def telloMoveLeft(self, distance):
         self.preplannedtoken = False
         self.append_console("Moving Left")
+        self.pre_planned_stop()
         return self.tello.move_left(distance, 0)
 
     def telloMoveRight(self, distance):
         self.preplannedtoken = False
         self.append_console("Moving Right")
+        self.pre_planned_stop()
         return self.tello.move_right(distance, 0)
 
     def telloUp(self, dist):
         self.preplannedtoken = False
         self.append_console("Moving Upward")
+        self.pre_planned_stop()
         return self.tello.move_up(dist, 0)
 
     def telloDown(self, dist):
         self.preplannedtoken = False
         self.append_console("Moving Downward")
+        self.pre_planned_stop()
         return self.tello.move_down(dist, 0)
 
     def updateTrackBar(self):
@@ -612,32 +665,60 @@ class TelloUI:
             self.append_console(description)
             self.tello.send_command(movement + " " + str(value), delay)
 
+    def resetBattery(self):
+        self.append_console("Battery reset to 100%")
+        print("Battery reset to 100%")
+        self.current_round = 1
+        self.current_checkpoint = 0
 
-    def testThread(self):
+    def pre_planned_stop(self):
+        self.preplannedtoken = False
+        self.isStop = True
+        self.btn_preplanned_stop["state"] = DISABLED
+        self.current_checkpoint = 0
+
+    def testThread1(self):
+        self.btn_preplanned_stop["state"] = NORMAL
         checkpoint = [[1, "ccw", 90, 1, "forward", 100, 5], [2, "ccw", 90, 1, "forward", 80, 4], [3, "ccw", 90, 1, "forward", 40, 2], [4, "cw", 90, 1, "forward", 60, 3], [5, "ccw", 90, 1, "forward", 40, 2], [0, "ccw", 90, 1, "forward", 40, 2]]
-        i = 0
-        max_round = 5
-        current_round = 1
-        self.append_console("Takeoff")
-        self.tello.takeoff()
-        while current_round <= max_round and self.preplannedtoken:
-            print 'Round ', current_round
-            self.append_console('Round '+ str(current_round))
-            if current_round == max_round:
+        i = self.current_checkpoint
+        max_round = 2
+        self.isStop = False
+
+        if not self.isPause:
+            self.append_console("Takeoff")
+            self.tello.takeoff()
+        if self.isPause:
+            self.isPause = False
+
+        while self.current_round <= max_round and self.preplannedtoken:
+            print 'Round ', self.current_round
+            self.append_console('Round '+ str(self.current_round))
+            if self.current_round == max_round:
                 self.append_console("Low battery. This is the last round!")
             while i < len(checkpoint) and self.preplannedtoken:
+                if (checkpoint[i][0]-1) < 0:
+                    print 'At checkpoint ', str(checkpoint[len(checkpoint)-2][0] )
+                    self.append_console('At checkpoint ' + str(checkpoint[len(checkpoint)-2][0] ))
+                else:
+                    print 'At checkpoint ', str(checkpoint[i][0]-1)
+                    self.append_console('At checkpoint ' + str(checkpoint[i][0]-1))
                 self.plannedoperation(checkpoint[i][1], checkpoint[i][2], checkpoint[i][3])
                 self.plannedoperation(checkpoint[i][4], checkpoint[i][5], checkpoint[i][6])
-                print 'Reached checkpoint ',  str(checkpoint[i][0])
-                self.append_console('Reached checkpoint '+  str(checkpoint[i][0]))
+                # print 'Reached checkpoint ',  str(checkpoint[i][0])
+                # self.append_console('Reached checkpoint '+  str(checkpoint[i][0]))
                 self.append_console("==================================================================================")
                 i+=1
-            current_round += 1
+                self.current_checkpoint+=1
+            if not self.isPause:
+                self.current_round += 1
             i = 0
-            if current_round == max_round:
-                self.append_console("Returning to charging port")
-                print("Returning to charging port")
-        if self.preplannedtoken:
+        if self.current_round == max_round and not self.isPause and not self.isStop:
+            self.append_console("Returning to charging port")
+            print("Returning to charging port")
+        if self.isPause:
+            self.append_console("Flight paused.")
+            print("Flight paused.")
+        elif self.preplannedtoken:
             print("Landing")
             self.append_console("Landing")
             self.tello.land()
@@ -646,18 +727,21 @@ class TelloUI:
         else:
             self.append_console("Flight interrupted. Switching to Manual mode")
         self.btn_preplanned1.config(relief="raised")
+        if self.current_round == max_round:
+            self.current_round = 1
 
 
     def testPrePlanned1(self):
-        testthread1 = threading.Thread(target= self.testThread)
+        testthread1 = threading.Thread(target= self.testThread1)
         if self.btn_preplanned1.config('relief')[-1] != 'sunken':
             self.btn_preplanned1.config(relief="sunken")
             self.preplannedtoken = True
             # testthread1.start()
-            self.testThread()
+            self.testThread1()
         else:
             self.btn_preplanned1.config(relief="raised")
             self.preplannedtoken = False
+            self.isPause = True
 
     def plannedRoute1(self):
         self.interrupt = False
