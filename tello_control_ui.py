@@ -82,19 +82,27 @@ class TelloUI:
                             expand="yes", padx=10, pady=5)
 
         #---------->Pre-planned flight<-----------------------
-        planFrame = LabelFrame(controlFrame1, text="Pre-Planned")
+        planFrame = LabelFrame(controlFrame1, text="Automatic Flight")
         planFrame.pack(fill="both", expand="yes", side="right")
+        planFrame2 = Frame(planFrame)
+        planFrame2.pack(fill="both", side="right")
 
-        self.btn_autoFlight = tki.Button(planFrame, text="Start Automatic Flight",
+        self.btn_autoFlight = tki.Button(planFrame, text="Start",
                                           command=self.autoControlFlight)
         self.btn_autoFlight.pack(side="top", fill="both",
                                expand="yes", padx=10, pady=5)
 
-        self.btn_autoFlight_stop = tki.Button(planFrame, text="Stop",
-                                              command=self.pre_planned_stop)
+        self.btn_autoFlight_pause = tki.Button(planFrame2, text="Pause",
+                                              command=self.auto_flight_pause)
+        self.btn_autoFlight_pause.pack(side="top", fill="both",
+                                      expand="yes", padx=10, pady=5)
+
+        self.btn_autoFlight_stop = tki.Button(planFrame2, text="Stop",
+                                              command=self.auto_flight_stop)
         self.btn_autoFlight_stop.pack(side="top", fill="both",
                                       expand="yes", padx=10, pady=5)
         self.btn_autoFlight_stop["state"] = DISABLED
+        self.btn_autoFlight_pause["state"] = DISABLED
 
         # ---------->Instruction Frame Starts<-----------------------
         controlFrame2 = Frame(self.root)
@@ -319,101 +327,87 @@ class TelloUI:
 
     def telloTakeOff(self):
         if not self.autoFlightToken:
-            self.pre_planned_stop()
             self.append_console("Take off")
             return self.tello.takeoff()   
-        self.autoFlightToken = False 
+        self.auto_flight_pause() 
 
     def telloLanding(self):
         if not self.autoFlightToken:
-            self.pre_planned_stop()
             self.append_console("Landing")
             return self.tello.land()
-        self.autoFlightToken = False
+        self.auto_flight_pause()
 
     def telloFlip_l(self):
         if not self.autoFlightToken:
-            self.pre_planned_stop()
             self.append_console("Flip left")
             return self.tello.flip('l', 0)
-        self.autoFlightToken = False
+        self.auto_flight_pause()
 
     def telloFlip_r(self):
         if not self.autoFlightToken:
-            self.pre_planned_stop()
             self.append_console("Flip right")
             return self.tello.flip('r', 0)
-        self.autoFlightToken = False
+        self.auto_flight_pause()
 
     def telloFlip_f(self):
         if not self.autoFlightToken:
-            self.pre_planned_stop()
             self.append_console("Flip forward")
             return self.tello.flip('f', 0)
-        self.autoFlightToken = False
+        self.auto_flight_pause()
 
     def telloFlip_b(self):
         if not self.autoFlightToken:
-            self.pre_planned_stop()
             self.append_console("Flip backward")
             return self.tello.flip('b', 0)
-        self.autoFlightToken = False
+        self.auto_flight_pause()
 
     def telloCW(self, degree):
         if not self.autoFlightToken:
-            self.pre_planned_stop()
             self.append_console("Rotate clockwise")
             return self.tello.rotate_cw(degree, 0)
-        self.autoFlightToken = False
+        self.auto_flight_pause()
 
     def telloCCW(self, degree):
         if not self.autoFlightToken:
-            self.pre_planned_stop()
             self.append_console("Rotate Counter-clockwise")
             return self.tello.rotate_ccw(degree, 0)
-        self.autoFlightToken = False
+        self.auto_flight_pause()
 
     def telloMoveForward(self, distance):
         if not self.autoFlightToken:
-            self.pre_planned_stop()
             self.append_console("Moving Forward")
             return self.tello.move_forward(distance, 0)
-        self.autoFlightToken = False
+        self.auto_flight_pause()
 
     def telloMoveBackward(self, distance):
         if not self.autoFlightToken:
-            self.pre_planned_stop()
             self.append_console("Moving Backward")
             return self.tello.move_backward(distance, 0)
-        self.autoFlightToken = False
+        self.auto_flight_pause()
 
     def telloMoveLeft(self, distance):
         if not self.autoFlightToken:
-            self.pre_planned_stop()
             self.append_console("Moving Left")
             return self.tello.move_left(distance, 0)
-        self.autoFlightToken = False
+        self.auto_flight_pause()
 
     def telloMoveRight(self, distance):
         if not self.autoFlightToken:
-            self.pre_planned_stop()
             self.append_console("Moving Right")
             return self.tello.move_right(distance, 0)
-        self.autoFlightToken = False
+        self.auto_flight_pause()
 
     def telloUp(self, dist):
         if not self.autoFlightToken:
-            self.pre_planned_stop()
             self.append_console("Moving Upward")
             return self.tello.move_up(dist, 0)
-        self.autoFlightToken = False
+        self.auto_flight_pause()
 
     def telloDown(self, dist):
         if not self.autoFlightToken:
-            self.pre_planned_stop()
             self.append_console("Moving Downward")
             return self.tello.move_down(dist, 0)
-        self.autoFlightToken = False
+        self.auto_flight_pause()
 
     # ============> On key press functions <============
 
@@ -488,7 +482,6 @@ class TelloUI:
     # Thread for Automatic Flight
     def flightThread(self):
         # Pre-planned flight for drone
-        self.btn_autoFlight_stop["state"] = NORMAL
         checkpoint = [[1, "ccw", 90, 1, "forward", 100, 5], [2, "ccw", 90, 1, "forward", 80, 4],
                       [3, "ccw", 90, 1, "forward", 40, 2], [4, "cw", 90, 1, "forward", 60, 3],
                       [5, "ccw", 90, 1, "forward", 40, 2], [0, "ccw", 90, 1, "forward", 40, 2]]
@@ -496,12 +489,14 @@ class TelloUI:
         max_round = 5
         self.isStop = False
 
-        if not self.isPause:
+        self.append_console(
+                    "==================================================================================")
+        if i == 0:
             self.append_console("Starting automatic flight")
             self.append_console("Takeoff")
             self.tello.takeoff()
-        if self.isPause:
-            self.isPause = False
+        else:
+            self.append_console("Continuing automatic flight")
 
         # Let drone run the pre-planned route 5 times
         while self.current_round <= max_round and self.autoFlightToken:
@@ -544,20 +539,27 @@ class TelloUI:
             print("Charging drone")
         else:
             self.append_console("Flight interrupted. Switching to Manual mode")
-        self.btn_autoFlight.config(relief="raised")
+        # self.btn_autoFlight.config(relief="raised")
         if self.current_round == max_round:
             self.current_round = 1
 
     # Start/Stop thread when button is pressed
     def autoControlFlight(self):
         # flightThread1 = threading.Thread(target= self.flightThread)
-        if self.btn_autoFlight.config('relief')[-1] != 'sunken':
-            self.btn_autoFlight.config(relief="sunken")
-            self.autoFlightToken = True
-            self.flightThread()
-        else:
-            self.btn_autoFlight.config(relief="raised")
-            self.autoFlightToken = False
+        # if self.btn_autoFlight.config('relief')[-1] != 'sunken':
+        #     self.btn_autoFlight.config(relief="sunken")
+        #     self.autoFlightToken = True
+        #     self.flightThread()
+        # else:
+        #     self.btn_autoFlight.config(relief="raised")
+        #     self.autoFlightToken = FALSE
+
+        self.btn_autoFlight["state"] = DISABLED
+        self.btn_autoFlight_pause["state"] = NORMAL
+        self.btn_autoFlight_stop["state"] = NORMAL
+        self.autoFlightToken = TRUE
+        self.isPause = FALSE
+        self.flightThread()
 
     # Print to Tkinter console
     def append_console(self, command):
@@ -571,10 +573,22 @@ class TelloUI:
         self.current_round = 1
         self.current_checkpoint = 0
 
-    def pre_planned_stop(self):
-        self.autoFlightToken = False
+    def auto_flight_pause(self):
+        self.autoFlightToken = FALSE
+        self.isPause = True
+        self.btn_autoFlight["state"] = NORMAL
+        self.btn_autoFlight_pause["state"] = DISABLED
+        self.btn_autoFlight_stop["state"] = NORMAL
+
+    def auto_flight_stop(self):
+        self.append_console(
+                    "==================================================================================")
+        self.append_console("Flight is stopped. Automatic Flight will be reseted.")
+        self.autoFlightToken = FALSE
         self.isStop = True
         self.btn_autoFlight_stop["state"] = DISABLED
+        self.btn_autoFlight["state"] = NORMAL
+        self.btn_autoFlight_pause["state"] = DISABLED
         self.current_checkpoint = 0
 
     # Close system
