@@ -27,7 +27,7 @@ class TelloUI:
         self.thread = None # thread of the Tkinter mainloop
         self.stopEvent = None
         self.quit = False
-        self.autoFlightToken = True
+        self.autoFlightToken = False
         self.current_round = 1
         self.current_checkpoint = 0
         self.isPause = False
@@ -328,86 +328,100 @@ class TelloUI:
     def telloTakeOff(self):
         if not self.autoFlightToken:
             self.append_console("Take off")
-            return self.tello.takeoff()   
-        self.auto_flight_pause() 
+            return self.tello.takeoff() 
+        else:  
+            self.auto_flight_pause() 
 
     def telloLanding(self):
         if not self.autoFlightToken:
             self.append_console("Landing")
             return self.tello.land()
-        self.auto_flight_pause()
+        else:  
+            self.auto_flight_pause()
 
     def telloFlip_l(self):
         if not self.autoFlightToken:
             self.append_console("Flip left")
             return self.tello.flip('l', 0)
-        self.auto_flight_pause()
+        else:  
+            self.auto_flight_pause()
 
     def telloFlip_r(self):
         if not self.autoFlightToken:
             self.append_console("Flip right")
             return self.tello.flip('r', 0)
-        self.auto_flight_pause()
+        else:  
+            self.auto_flight_pause()
 
     def telloFlip_f(self):
         if not self.autoFlightToken:
             self.append_console("Flip forward")
             return self.tello.flip('f', 0)
-        self.auto_flight_pause()
+        else:  
+            self.auto_flight_pause()
 
     def telloFlip_b(self):
         if not self.autoFlightToken:
             self.append_console("Flip backward")
             return self.tello.flip('b', 0)
-        self.auto_flight_pause()
+        else:  
+            self.auto_flight_pause()
 
     def telloCW(self, degree):
         if not self.autoFlightToken:
             self.append_console("Rotate clockwise")
             return self.tello.rotate_cw(degree, 0)
-        self.auto_flight_pause()
+        else:  
+            self.auto_flight_pause()
 
     def telloCCW(self, degree):
         if not self.autoFlightToken:
             self.append_console("Rotate Counter-clockwise")
             return self.tello.rotate_ccw(degree, 0)
-        self.auto_flight_pause()
+        else:  
+            self.auto_flight_pause()
 
     def telloMoveForward(self, distance):
         if not self.autoFlightToken:
             self.append_console("Moving Forward")
             return self.tello.move_forward(distance, 0)
-        self.auto_flight_pause()
+        else:  
+            self.auto_flight_pause()
 
     def telloMoveBackward(self, distance):
         if not self.autoFlightToken:
             self.append_console("Moving Backward")
             return self.tello.move_backward(distance, 0)
-        self.auto_flight_pause()
+        else:  
+            self.auto_flight_pause()
 
     def telloMoveLeft(self, distance):
         if not self.autoFlightToken:
             self.append_console("Moving Left")
             return self.tello.move_left(distance, 0)
-        self.auto_flight_pause()
+        else:  
+            self.auto_flight_pause()
 
     def telloMoveRight(self, distance):
         if not self.autoFlightToken:
             self.append_console("Moving Right")
             return self.tello.move_right(distance, 0)
-        self.auto_flight_pause()
+        else:  
+            self.auto_flight_pause()
 
     def telloUp(self, dist):
         if not self.autoFlightToken:
             self.append_console("Moving Upward")
             return self.tello.move_up(dist, 0)
-        self.auto_flight_pause()
+        else:  
+            self.auto_flight_pause()
 
     def telloDown(self, dist):
         if not self.autoFlightToken:
             self.append_console("Moving Downward")
             return self.tello.move_down(dist, 0)
-        self.auto_flight_pause()
+        else:  
+            self.auto_flight_pause()
 
     # ============> On key press functions <============
 
@@ -545,15 +559,6 @@ class TelloUI:
 
     # Start/Stop thread when button is pressed
     def autoControlFlight(self):
-        # flightThread1 = threading.Thread(target= self.flightThread)
-        # if self.btn_autoFlight.config('relief')[-1] != 'sunken':
-        #     self.btn_autoFlight.config(relief="sunken")
-        #     self.autoFlightToken = True
-        #     self.flightThread()
-        # else:
-        #     self.btn_autoFlight.config(relief="raised")
-        #     self.autoFlightToken = FALSE
-
         self.btn_autoFlight["state"] = DISABLED
         self.btn_autoFlight_pause["state"] = NORMAL
         self.btn_autoFlight_stop["state"] = NORMAL
@@ -574,6 +579,7 @@ class TelloUI:
         self.current_checkpoint = 0
 
     def auto_flight_pause(self):
+        print("Paused")
         self.autoFlightToken = FALSE
         self.isPause = True
         self.btn_autoFlight["state"] = NORMAL
@@ -581,6 +587,7 @@ class TelloUI:
         self.btn_autoFlight_stop["state"] = NORMAL
 
     def auto_flight_stop(self):
+        print("Stoped")
         self.append_console(
                     "==================================================================================")
         self.append_console("Flight is stopped. Automatic Flight will be reseted.")
