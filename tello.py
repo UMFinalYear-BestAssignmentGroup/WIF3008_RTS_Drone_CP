@@ -36,6 +36,7 @@ class Tello:
         self.local_video_port = 11111  # port for receiving video stream
         self.last_height = 0
         self.socket.bind((local_ip, local_port))
+        self.delay = 0
 
         # thread for receiving cmd ack
         self.receive_thread = threading.Thread(target=self._receive_thread)
@@ -153,9 +154,14 @@ class Tello:
             response = self.response.decode('utf-8')
 
         self.response = None
-        delay = float(delay)
-        time.sleep(delay)
+        self.delay = delay
+        for i in range(self.delay):
+            time.sleep(1)
+    
         return response
+    
+    def interrupt_delay(self):
+        self.delay = 0
 
     def set_abort_flag(self):
         """

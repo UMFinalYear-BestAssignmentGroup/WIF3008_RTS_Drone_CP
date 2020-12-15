@@ -492,7 +492,7 @@ class TelloUI:
         self.append_console(
                     "==================================================================================")
         if i == 0:
-            self.append_console("Starting automatic flight")
+            self.append_console("Switching to Automatic Mode. Starting flight")
             self.append_console("Takeoff")
             self.tello.takeoff()
         else:
