@@ -543,7 +543,7 @@ class TelloUI:
             self.append_console("Returning to charging port")
             print("Returning to charging port")
         if self.isPause:
-            self.append_console("Flight paused.")
+            self.append_console("Flight paused. Please move to checkpoint "+ str(self.current_checkpoint) + " to continue Automatic Flight")
             print("Flight paused.")
         elif self.autoFlightToken:
             print("Landing")
