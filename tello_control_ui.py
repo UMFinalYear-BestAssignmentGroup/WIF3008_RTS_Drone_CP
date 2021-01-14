@@ -492,6 +492,11 @@ class TelloUI:
             self.append_console(description)
             self.tello.rotate_ccw(value, delay)
             # self.tello.send_command(movement + " " + str(value), delay)
+        elif movement == "landing":
+            description = "Drone is landing "
+            self.append_console(description)
+            self.tello.land()
+            # self.tello.send_command(movement + " " + str(value), delay)
 
     # Thread for Automatic Flight
     def flightThread(self):
@@ -590,7 +595,9 @@ class TelloUI:
         print("Stoped")
         self.append_console(
                     "==================================================================================")
+        self.append_console("Landing")
         self.append_console("Flight is stopped. Automatic Flight will be reseted.")
+        self.tello.land()
         self.autoFlightToken = FALSE
         self.isStop = True
         self.btn_autoFlight_stop["state"] = DISABLED
