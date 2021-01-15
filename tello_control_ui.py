@@ -12,7 +12,7 @@ import platform
 class TelloUI:
     """Wrapper class to enable the GUI."""
 
-    def __init__(self,tello,outputpath):
+    def __init__(self,tello,checkpoint,outputpath):
         """
         Initial all the element of the GUI,support by Tkinter
 
@@ -23,6 +23,7 @@ class TelloUI:
         """
         self.tello = tello # videostream device
         self.outputPath = outputpath # the path that save pictures created by clicking the takeSnapshot button 
+        self.checkpoint = checkpoint
         self.frame = None  # frame read from h264decoder and used for pose recognition 
         self.thread = None # thread of the Tkinter mainloop
         self.stopEvent = None
@@ -501,9 +502,7 @@ class TelloUI:
     # Thread for Automatic Flight
     def flightThread(self):
         # Pre-planned flight for drone
-        checkpoint = [[1, "ccw", 90, 1, "forward", 100, 5], [2, "ccw", 90, 1, "forward", 80, 4],
-                      [3, "ccw", 90, 1, "forward", 40, 2], [4, "cw", 90, 1, "forward", 60, 3],
-                      [5, "ccw", 90, 1, "forward", 40, 2], [0, "ccw", 90, 1, "forward", 40, 2]]
+        checkpoint = self.checkpoint
         i = self.current_checkpoint
         max_round = 5
         self.isStop = False
